@@ -151,24 +151,30 @@ def seed_database(db: Session, num_transactions: int = 50000, seed: int = 42) ->
             status = "FAILED"
             # Failure categorization logic based on correlations
             fail_type_roll = random.random()
+            
+            # Stochastic ground truth recoverability with realistic noise
+            # Base probability derived from customer history, failure category, risk, and latency
             if risk_score > 0.35 or fail_type_roll < 0.10:
                 failure_code = "RISK_REJECTED"
                 failure_category = "COMPLIANCE_RISK"
-                is_recoverable_gt = False
+                base_rec_prob = 0.08
             elif fail_type_roll < 0.50:
                 failure_code = "GATEWAY_TIMEOUT"
                 failure_category = "TECHNICAL_TIMEOUT"
-                # High recoverability if customer has strong history
-                is_recoverable_gt = customer.historical_success_rate >= 0.70
+                base_rec_prob = customer.historical_success_rate * 0.90 + (0.10 if latency_ms > 250 else 0.0)
             elif fail_type_roll < 0.80:
                 failure_code = "INSUFFICIENT_FUNDS"
                 failure_category = "USER_ERROR"
-                # Recoverable via dynamic delay / customer nudge if customer history is decent
-                is_recoverable_gt = customer.historical_success_rate >= 0.80
+                base_rec_prob = customer.historical_success_rate * 0.70 - (amount / 50000.0)
             else:
                 failure_code = "CARD_EXPIRED" if payment_method in ["CREDIT_CARD", "DEBIT_CARD"] else "AUTHENTICATION_FAILED"
                 failure_category = "USER_ERROR"
-                is_recoverable_gt = customer.historical_success_rate >= 0.75
+                base_rec_prob = customer.historical_success_rate * 0.65
+
+            # Add stochastic variance (realistic real-world noise std=0.08)
+            noise = float(np.random.normal(loc=0.0, scale=0.08))
+            final_rec_prob = np.clip(base_rec_prob + noise, 0.02, 0.98)
+            is_recoverable_gt = bool(random.random() < final_rec_prob)
 
         transactions.append(Transaction(
             id=txn_id,

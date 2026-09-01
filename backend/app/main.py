@@ -5,7 +5,7 @@ from app.config import settings
 from app.db.session import engine, Base, SessionLocal
 from app.db.models import Transaction
 from app.simulator.generator import seed_database
-from app.api import health, transactions, dashboard, simulator
+from app.api import health, transactions, dashboard, simulator, evaluation
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,6 +45,8 @@ app.include_router(health.router, prefix=settings.API_V1_STR, tags=["Health"])
 app.include_router(transactions.router, prefix=settings.API_V1_STR, tags=["Transactions"])
 app.include_router(dashboard.router, prefix=settings.API_V1_STR, tags=["Dashboard"])
 app.include_router(simulator.router, prefix=settings.API_V1_STR, tags=["Simulator"])
+app.include_router(evaluation.router, prefix=settings.API_V1_STR, tags=["Evaluation"])
+
 
 @app.get("/")
 def root():
