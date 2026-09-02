@@ -90,6 +90,10 @@ class Transaction(Base):
     issuer = relationship("Issuer", back_populates="transactions")
     recovery_predictions = relationship("RecoveryPrediction", back_populates="transaction")
     recovery_actions = relationship("RecoveryAction", back_populates="transaction")
+    recovery_decisions = relationship("RecoveryDecision", back_populates="transaction")
+    recovery_executions = relationship("RecoveryExecution", back_populates="transaction")
+    audit_events = relationship("AuditEvent", back_populates="transaction")
+
 
 
 class Incident(Base):
@@ -167,3 +171,59 @@ class SimulationScenario(Base):
     failure_multiplier = Column(Float, nullable=False, default=1.0)
     is_active = Column(Boolean, nullable=False, default=False)
     injected_at = Column(DateTime, nullable=True)
+
+
+class RecoveryDecision(Base):
+    __tablename__ = "recovery_decisions"
+
+    id = Column(String, primary_key=True, index=True)
+    transaction_id = Column(String, ForeignKey("transactions.id"), index=True, nullable=False)
+    strategy = Column(String, nullable=False, index=True)
+    recoverability_probability = Column(Float, nullable=False)
+    strategy_success_probability = Column(Float, nullable=False)
+    expected_recovery = Column(Float, nullable=False)
+    recovery_cost = Column(Float, nullable=False)
+    customer_friction_cost = Column(Float, nullable=False)
+    risk_penalty = Column(Float, nullable=False)
+    expected_economic_value = Column(Float, nullable=False)
+    decision_confidence = Column(String, nullable=False)
+    confidence_type = Column(String, nullable=False, default="heuristic")
+    autonomy_action = Column(String, nullable=False)
+    explanation_json = Column(Text, nullable=False, default="{}")
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+
+    transaction = relationship("Transaction", back_populates="recovery_decisions")
+    execution = relationship("RecoveryExecution", back_populates="decision", uselist=False)
+
+
+class RecoveryExecution(Base):
+    __tablename__ = "recovery_executions"
+
+    id = Column(String, primary_key=True, index=True)
+    decision_id = Column(String, ForeignKey("recovery_decisions.id"), index=True, nullable=False, unique=True)
+    transaction_id = Column(String, ForeignKey("transactions.id"), index=True, nullable=False)
+    status = Column(String, nullable=False, default="EXECUTED")
+    simulated_success = Column(Boolean, nullable=False, default=False)
+    recovered_amount = Column(Float, nullable=False, default=0.0)
+    recovery_cost = Column(Float, nullable=False, default=0.0)
+    friction_cost = Column(Float, nullable=False, default=0.0)
+    risk_penalty = Column(Float, nullable=False, default=0.0)
+    net_recovered_amount = Column(Float, nullable=False, default=0.0)
+    executed_at = Column(DateTime, nullable=False, default=utc_now)
+
+    transaction = relationship("Transaction", back_populates="recovery_executions")
+    decision = relationship("RecoveryDecision", back_populates="execution")
+
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+
+    id = Column(String, primary_key=True, index=True)
+    transaction_id = Column(String, ForeignKey("transactions.id"), index=True, nullable=False)
+    decision_id = Column(String, ForeignKey("recovery_decisions.id"), nullable=True)
+    event_type = Column(String, nullable=False, index=True)
+    event_data = Column(Text, nullable=False, default="{}")
+    timestamp = Column(DateTime, nullable=False, default=utc_now, index=True)
+
+    transaction = relationship("Transaction", back_populates="audit_events")
+
