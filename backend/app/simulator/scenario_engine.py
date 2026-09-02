@@ -49,10 +49,11 @@ def inject_gateway_degradation(db: Session, gateway_code: str = "gateway_b") -> 
 
     for txn in selected_txns:
         txn.status = "FAILED"
-        txn.failure_code = "GATEWAY_DEGRADATION"
-        txn.failure_category = "SYSTEM_DEGRADATION"
+        txn.failure_code = "GATEWAY_TIMEOUT"
+        txn.failure_category = "TECHNICAL_TIMEOUT"
         txn.scenario_tag = "GATEWAY_B_DEGRADATION"
         txn.latency_ms = int(txn.latency_ms * 4.5) # latency spike
+
         # Technical gateway degradation is highly recoverable by rerouting!
         txn.is_recoverable_ground_truth = txn.customer_historical_success_rate >= 0.60
         total_revenue_impact += txn.amount

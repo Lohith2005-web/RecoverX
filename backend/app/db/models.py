@@ -101,17 +101,59 @@ class Incident(Base):
 
     id = Column(String, primary_key=True, index=True)
     title = Column(String, nullable=False)
+    incident_type = Column(String, nullable=False, default="GATEWAY_DEGRADATION") # GATEWAY_DEGRADATION, ISSUER_OUTAGE, PAYMENT_METHOD_INCIDENT, SYSTEM_TIMEOUT_SPIKE
+    severity = Column(String, nullable=False, default="HIGH") # CRITICAL, HIGH, MEDIUM, LOW
     gateway_id = Column(String, ForeignKey("gateways.id"), nullable=True)
     issuer_id = Column(String, ForeignKey("issuers.id"), nullable=True)
-    anomaly_type = Column(String, nullable=False) # GATEWAY_DEGRADATION, ISSUER_DEGRADATION, TIMEOUT_SPIKE
+    affected_payment_method = Column(String, nullable=True)
+    anomaly_type = Column(String, nullable=False)
     baseline_rate = Column(Float, nullable=False)
     current_rate = Column(Float, nullable=False)
-    revenue_at_risk = Column(Float, nullable=False, default=0.0)
+    affected_transactions = Column(Integer, nullable=False, default=0)
+    revenue_at_risk = Column(Float, nullable=False, default=0.0) # Gross revenue at risk
+    recoverable_revenue_at_risk = Column(Float, nullable=False, default=0.0)
+    unrecoverable_revenue_at_risk = Column(Float, nullable=False, default=0.0)
+    recovered_revenue = Column(Float, nullable=False, default=0.0)
     confidence = Column(Float, nullable=False, default=0.0)
+    confidence_type = Column(String, nullable=False, default="heuristic")
     root_cause = Column(Text, nullable=False)
+    recommended_action = Column(Text, nullable=True)
     evidence_json = Column(Text, nullable=False, default="{}")
     status = Column(String, nullable=False, default="ACTIVE") # ACTIVE, RESOLVED
     created_at = Column(DateTime, nullable=False, default=utc_now)
+    resolved_at = Column(DateTime, nullable=True)
+
+    timeline_events = relationship("IncidentTimelineEvent", back_populates="incident", cascade="all, delete-orphan")
+
+
+class Anomaly(Base):
+    __tablename__ = "anomalies"
+
+    id = Column(String, primary_key=True, index=True)
+    metric = Column(String, nullable=False, index=True)
+    entity_type = Column(String, nullable=False) # GATEWAY, ISSUER, PAYMENT_METHOD, SYSTEM
+    entity_id = Column(String, nullable=True, index=True)
+    current_value = Column(Float, nullable=False)
+    baseline_value = Column(Float, nullable=False)
+    deviation_percent = Column(Float, nullable=False)
+    z_score = Column(Float, nullable=True)
+    severity = Column(String, nullable=False) # CRITICAL, HIGH, MEDIUM, LOW
+    evidence_json = Column(Text, nullable=False, default="{}")
+    detected_at = Column(DateTime, nullable=False, default=utc_now)
+
+
+class IncidentTimelineEvent(Base):
+    __tablename__ = "incident_timeline_events"
+
+    id = Column(String, primary_key=True, index=True)
+    incident_id = Column(String, ForeignKey("incidents.id"), index=True, nullable=False)
+    event_type = Column(String, nullable=False, index=True)
+    description = Column(Text, nullable=False)
+    event_data = Column(Text, nullable=False, default="{}")
+    timestamp = Column(DateTime, nullable=False, default=utc_now)
+
+    incident = relationship("Incident", back_populates="timeline_events")
+
 
 
 class RecoveryPrediction(Base):
