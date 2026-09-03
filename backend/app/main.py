@@ -5,7 +5,7 @@ from app.config import settings
 from app.db.session import engine, Base, SessionLocal
 from app.db.models import Transaction
 from app.simulator.generator import seed_database
-from app.api import health, transactions, dashboard, simulator, evaluation, recovery, incidents
+from app.api import health, transactions, dashboard, simulator, evaluation, recovery, incidents, simulation_api, investigation_api
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,6 +48,9 @@ app.include_router(simulator.router, prefix=settings.API_V1_STR, tags=["Simulato
 app.include_router(evaluation.router, prefix=settings.API_V1_STR, tags=["Evaluation"])
 app.include_router(recovery.router, prefix=settings.API_V1_STR, tags=["Recovery Engine"])
 app.include_router(incidents.router, prefix=settings.API_V1_STR, tags=["Incident Intelligence"])
+app.include_router(simulation_api.router, prefix=settings.API_V1_STR, tags=["What-If Simulation"])
+app.include_router(investigation_api.router, prefix=settings.API_V1_STR, tags=["AI Investigation Assistant"])
+
 
 
 

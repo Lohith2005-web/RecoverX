@@ -269,3 +269,18 @@ class AuditEvent(Base):
 
     transaction = relationship("Transaction", back_populates="audit_events")
 
+
+class AIInvestigationLog(Base):
+    __tablename__ = "ai_investigation_logs"
+
+    id = Column(String, primary_key=True, index=True)
+    query_text = Column(Text, nullable=False)
+    investigation_type = Column(String, nullable=False, index=True)
+    entity_id = Column(String, nullable=True, index=True)
+    answer = Column(Text, nullable=False)
+    confidence = Column(String, nullable=False, default="HIGH")
+    confidence_type = Column(String, nullable=False, default="evidence_grounded")
+    evidence_json = Column(Text, nullable=False, default="[]")
+    created_at = Column(DateTime, nullable=False, default=utc_now, index=True)
+
+
