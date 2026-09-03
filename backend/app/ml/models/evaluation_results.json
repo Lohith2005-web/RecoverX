@@ -10,21 +10,21 @@
   },
   "train_size": 2137,
   "test_size": 535,
-  "training_duration_seconds": 32.125,
+  "training_duration_seconds": 1.273,
   "test_metrics": {
-    "precision": 0.6593,
-    "recall": 0.6967,
-    "f1_score": 0.6775,
-    "roc_auc": 0.7028,
-    "accuracy": 0.628,
+    "precision": 0.6709,
+    "recall": 0.7,
+    "f1_score": 0.6852,
+    "roc_auc": 0.7056,
+    "accuracy": 0.6393,
     "confusion_matrix": [
       [
-        127,
-        108
+        132,
+        103
       ],
       [
-        91,
-        209
+        90,
+        210
       ]
     ]
   },
@@ -48,63 +48,63 @@
   "feature_importances": [
     {
       "feature": "failure_category_TECHNICAL_TIMEOUT",
-      "importance": 0.2952
+      "importance": 0.2594
     },
     {
       "feature": "failure_category_COMPLIANCE_RISK",
-      "importance": 0.1285
+      "importance": 0.1231
     },
     {
       "feature": "failure_code_GATEWAY_TIMEOUT",
-      "importance": 0.0455
+      "importance": 0.0538
     },
     {
       "feature": "failure_category_USER_ERROR",
-      "importance": 0.0429
+      "importance": 0.0426
     },
     {
       "feature": "failure_code_RISK_REJECTED",
-      "importance": 0.0263
-    },
-    {
-      "feature": "customer_historical_success_rate",
-      "importance": 0.0227
+      "importance": 0.0359
     },
     {
       "feature": "failure_code_INSUFFICIENT_FUNDS",
-      "importance": 0.0226
-    },
-    {
-      "feature": "gateway_id_gtw_b",
-      "importance": 0.0205
+      "importance": 0.0278
     },
     {
       "feature": "payment_method_NET_BANKING",
-      "importance": 0.0203
+      "importance": 0.0243
     },
     {
-      "feature": "payment_method_DEBIT_CARD",
-      "importance": 0.0197
+      "feature": "customer_historical_success_rate",
+      "importance": 0.024
     },
     {
-      "feature": "risk_score",
-      "importance": 0.0194
+      "feature": "issuer_id_isr_sbi",
+      "importance": 0.0217
+    },
+    {
+      "feature": "failure_code_AUTHENTICATION_FAILED",
+      "importance": 0.0212
     },
     {
       "feature": "amount",
-      "importance": 0.0193
+      "importance": 0.0205
     },
     {
       "feature": "latency_ms",
-      "importance": 0.0192
+      "importance": 0.0199
     },
     {
-      "feature": "payment_method_UPI",
-      "importance": 0.0191
+      "feature": "gateway_id_gtw_b",
+      "importance": 0.0199
     },
     {
-      "feature": "subscription_flag_True",
-      "importance": 0.0191
+      "feature": "gateway_id_gtw_c",
+      "importance": 0.0198
+    },
+    {
+      "feature": "risk_score",
+      "importance": 0.0193
     }
   ],
   "excluded_forbidden_fields": [
