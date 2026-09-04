@@ -75,10 +75,15 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
         incidents_summary.append({
             "id": inc.id,
             "title": inc.title,
+            "severity": inc.severity,
+            "status": inc.status,
             "anomaly_type": inc.anomaly_type,
             "baseline_rate": inc.baseline_rate,
             "current_rate": inc.current_rate,
             "revenue_at_risk": inc.revenue_at_risk,
+            "gross_revenue_at_risk": inc.revenue_at_risk,
+            "recoverable_revenue_at_risk": inc.recoverable_revenue_at_risk,
+            "unrecoverable_revenue_at_risk": inc.unrecoverable_revenue_at_risk,
             "confidence": inc.confidence,
             "root_cause": inc.root_cause
         })

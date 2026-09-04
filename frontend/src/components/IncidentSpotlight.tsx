@@ -117,10 +117,11 @@ export const IncidentSpotlight: React.FC<IncidentSpotlightProps> = ({
           </p>
         </div>
         <div>
-          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Expected Recoverable</p>
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Oracle Recoverable</p>
           <p className="text-xl font-bold text-emerald-400 mt-0.5 font-mono">
             {formatINR(incident.recoverable_revenue_at_risk, 'compact')}
           </p>
+          <span className="text-[10px] text-slate-400 block mt-0.5">Simulator benchmark ground truth</span>
         </div>
       </div>
 

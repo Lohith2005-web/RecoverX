@@ -46,6 +46,7 @@ def inject_gateway_degradation(db: Session, gateway_code: str = "gateway_b") -> 
     selected_txns = random.sample(gtw_txns, min(degrade_count, len(gtw_txns)))
 
     total_revenue_impact = 0.0
+    recoverable_revenue_impact = 0.0
 
     for txn in selected_txns:
         txn.status = "FAILED"
@@ -57,7 +58,10 @@ def inject_gateway_degradation(db: Session, gateway_code: str = "gateway_b") -> 
         # Technical gateway degradation is highly recoverable by rerouting!
         txn.is_recoverable_ground_truth = txn.customer_historical_success_rate >= 0.60
         total_revenue_impact += txn.amount
+        if txn.is_recoverable_ground_truth:
+            recoverable_revenue_impact += txn.amount
 
+    unrecoverable_revenue_impact = total_revenue_impact - recoverable_revenue_impact
     db.commit()
 
     # 3. Calculate baseline vs current failure rates for Gateway B
@@ -73,10 +77,13 @@ def inject_gateway_degradation(db: Session, gateway_code: str = "gateway_b") -> 
         anomaly_type="GATEWAY_DEGRADATION",
         baseline_rate=gateway.baseline_failure_rate,
         current_rate=current_failure_rate,
+        affected_transactions=len(selected_txns),
         revenue_at_risk=round(total_revenue_impact, 2),
+        recoverable_revenue_at_risk=round(recoverable_revenue_impact, 2),
+        unrecoverable_revenue_at_risk=round(unrecoverable_revenue_impact, 2),
         confidence=0.96,
         root_cause=f"Infrastructure degradation detected on {gateway.name}. Latency increased by 350%, causing gateway timeouts and system degradation errors.",
-        evidence_json=f'{{"affected_transactions": {len(selected_txns)}, "baseline_rate": {gateway.baseline_failure_rate}, "current_rate": {current_failure_rate}, "revenue_at_risk": {round(total_revenue_impact, 2)}}}',
+        evidence_json=f'{{"affected_transactions": {len(selected_txns)}, "baseline_rate": {gateway.baseline_failure_rate}, "current_rate": {current_failure_rate}, "revenue_at_risk": {round(total_revenue_impact, 2)}, "recoverable_revenue_at_risk": {round(recoverable_revenue_impact, 2)}}}',
         status="ACTIVE",
         created_at=utc_now()
     )

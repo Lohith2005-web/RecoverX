@@ -68,18 +68,20 @@ def run_anomaly_detection(
 @router.get("/incidents")
 def list_incidents(
     status: Optional[str] = Query(None, description="Filter by status: ACTIVE or RESOLVED"),
+    status_filter: Optional[str] = Query(None, description="Alias for status filter"),
     severity: Optional[str] = Query(None, description="Filter by severity: CRITICAL, HIGH, MEDIUM, LOW"),
     limit: int = Query(20, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db)
 ):
     """
-    Returns list of grouped operational incidents.
+    Returns list of grouped operational incidents with failure rate metrics and financial breakdowns.
     """
+    target_status = status or status_filter
     query = db.query(Incident)
-    if status:
-        query = query.filter(Incident.status == status.upper())
-    if severity:
+    if target_status and isinstance(target_status, str):
+        query = query.filter(Incident.status == target_status.upper())
+    if severity and isinstance(severity, str):
         query = query.filter(Incident.severity == severity.upper())
 
     total_count = query.count()
@@ -91,12 +93,16 @@ def list_incidents(
             "id": inc.id,
             "title": inc.title,
             "incident_type": inc.incident_type,
+            "anomaly_type": inc.anomaly_type,
             "severity": inc.severity,
             "status": inc.status,
             "gateway_id": inc.gateway_id,
             "issuer_id": inc.issuer_id,
             "affected_payment_method": inc.affected_payment_method,
+            "baseline_rate": inc.baseline_rate,
+            "current_rate": inc.current_rate,
             "affected_transactions": inc.affected_transactions,
+            "revenue_at_risk": inc.revenue_at_risk,
             "gross_revenue_at_risk": inc.revenue_at_risk,
             "recoverable_revenue_at_risk": inc.recoverable_revenue_at_risk,
             "unrecoverable_revenue_at_risk": inc.unrecoverable_revenue_at_risk,
@@ -152,12 +158,20 @@ def get_incident_detail(
         "id": inc.id,
         "title": inc.title,
         "incident_type": inc.incident_type,
+        "anomaly_type": inc.anomaly_type,
         "severity": inc.severity,
         "status": inc.status,
         "gateway_id": inc.gateway_id,
         "issuer_id": inc.issuer_id,
         "affected_payment_method": inc.affected_payment_method,
+        "baseline_rate": inc.baseline_rate,
+        "current_rate": inc.current_rate,
         "affected_transactions": inc.affected_transactions,
+        "gross_revenue_at_risk": inc.revenue_at_risk,
+        "revenue_at_risk": inc.revenue_at_risk,
+        "recoverable_revenue_at_risk": inc.recoverable_revenue_at_risk,
+        "unrecoverable_revenue_at_risk": inc.unrecoverable_revenue_at_risk,
+        "recovered_revenue": inc.recovered_revenue,
         "financial_impact": {
             "gross_revenue_at_risk": inc.revenue_at_risk,
             "recoverable_revenue_at_risk": inc.recoverable_revenue_at_risk,
