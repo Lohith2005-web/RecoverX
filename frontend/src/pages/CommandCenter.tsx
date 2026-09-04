@@ -173,7 +173,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
         <KPICard
           title="Gross Revenue At Risk"
           value={formatINR(metrics.revenue_at_risk, 'compact')}
-          subtitle={`Across ${metrics.failed_payment_value ? Math.round(metrics.revenue_at_risk) : 0} failed payments`}
+          subtitle={`Across ${metrics.failed_transactions_count || 0} failed payments`}
           icon={ShieldAlert}
           variant="danger"
           badgeText="POTENTIAL LOSS"

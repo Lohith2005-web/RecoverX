@@ -73,6 +73,7 @@ def inject_gateway_degradation(db: Session, gateway_code: str = "gateway_b") -> 
     incident = Incident(
         id=f"inc_{int(utc_now().timestamp())}",
         title=f"🚨 Critical Anomaly: {gateway.name} Failure Rate Spike",
+        severity="CRITICAL",
         gateway_id=gateway.id,
         anomaly_type="GATEWAY_DEGRADATION",
         baseline_rate=gateway.baseline_failure_rate,

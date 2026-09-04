@@ -90,6 +90,7 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
 
     return {
         "total_transactions": total_txns,
+        "failed_transactions_count": failed_count,
         "total_transaction_value": round(total_val, 2),
         "successful_payment_value": round(success_val, 2),
         "failed_payment_value": round(failed_val, 2),

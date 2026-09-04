@@ -12,6 +12,7 @@ export interface GatewayPerformance {
 
 export interface DashboardMetrics {
   total_transactions: number;
+  failed_transactions_count: number;
   total_transaction_value: number;
   successful_payment_value: number;
   failed_payment_value: number;
