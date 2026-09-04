@@ -172,7 +172,7 @@ def train_recoverability_model(seed: int = 42) -> Dict[str, Any]:
         "baseline_comparison": baseline_metrics,
         "feature_importances": feature_importance_list[:15], # Top 15 features
         "excluded_forbidden_fields": FORBIDDEN_FIELDS,
-        "model_file_path": str(model_filepath.resolve())
+        "model_file_path": "backend/app/ml/models/recoverability_model.joblib"
     }
 
     report_filepath = MODEL_DIR / "evaluation_results.json"

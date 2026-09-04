@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ShieldAlert, TrendingUp, DollarSign, Activity, AlertOctagon, RefreshCw } from 'lucide-react';
+import { ShieldAlert, TrendingUp, DollarSign, Activity, AlertOctagon, RefreshCw, Zap, RotateCcw } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { fetchDashboardMetrics } from '../api/dashboard';
 import { fetchIncidents } from '../api/incidents';
 import { fetchRecoveryDecision, fetchRecoveryOpportunities } from '../api/recovery';
+import { injectScenario, resetSimulator } from '../api/simulation';
 import type { DashboardMetrics, Incident, CandidateEvaluation } from '../types';
 import { formatINR, formatPercent } from '../utils/formatters';
 import { KPICard } from '../components/KPICard';
@@ -23,6 +24,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
   onNavigateToWhatIf,
 }) => {
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -71,11 +73,35 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
     }
   };
 
+  const handleInjectScenario = async () => {
+    setActionLoading(true);
+    try {
+      await injectScenario('GATEWAY_DEGRADATION', 'gateway_b');
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to inject scenario.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResetSimulator = async () => {
+    setActionLoading(true);
+    try {
+      await resetSimulator();
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to reset simulator.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, []);
 
-  if (loading) {
+  if (loading && !metrics) {
     return <LoadingSpinner label="Loading RecoverX Command Center metrics..." />;
   }
 
@@ -91,7 +117,7 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
       fill: '#ef4444',
     },
     {
-      name: 'Expected Recoverable',
+      name: 'Oracle Recoverable',
       Amount: metrics.ground_truth_recoverable_revenue,
       fill: '#10b981',
     },
@@ -112,13 +138,34 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
             Autonomous detection, economic decisioning, and counterfactual intelligence dashboard
           </p>
         </div>
-        <button
-          onClick={loadData}
-          className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition-colors flex items-center space-x-2 shrink-0 border border-slate-700"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Data</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onClick={handleInjectScenario}
+            disabled={actionLoading}
+            className="px-3 py-1.5 bg-amber-950/80 hover:bg-amber-900 border border-amber-800/80 text-amber-300 text-xs font-semibold rounded-lg transition-colors flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>Inject Incident</span>
+          </button>
+
+          <button
+            onClick={handleResetSimulator}
+            disabled={actionLoading}
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors flex items-center space-x-1.5 shadow-sm disabled:opacity-50"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+            <span>Reset Dataset</span>
+          </button>
+
+          <button
+            onClick={loadData}
+            disabled={actionLoading}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center space-x-1.5 shadow-sm shadow-blue-900/30 disabled:opacity-50"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {/* TOP KPI CARDS */}
@@ -132,12 +179,12 @@ export const CommandCenter: React.FC<CommandCenterProps> = ({
           badgeText="POTENTIAL LOSS"
         />
         <KPICard
-          title="Expected Recoverable"
+          title="Oracle Recoverable"
           value={formatINR(metrics.ground_truth_recoverable_revenue, 'compact')}
-          subtitle="ML predicted high probability recoveries"
+          subtitle="Simulator benchmark ground truth"
           icon={TrendingUp}
           variant="success"
-          badgeText="ML PREDICTED"
+          badgeText="GROUND TRUTH"
         />
         <KPICard
           title="Actual Recovered"

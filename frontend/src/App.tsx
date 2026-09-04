@@ -9,7 +9,7 @@ import { TransactionInvestigation } from './pages/TransactionInvestigation';
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
-  const [selectedTxnId] = useState<string>('txn_001160');
+  const [selectedTxnId] = useState<string>('txn_000040');
 
   const handleNavigateToIncident = (incidentId: string) => {
     setSelectedIncidentId(incidentId);

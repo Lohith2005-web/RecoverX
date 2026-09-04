@@ -25,3 +25,16 @@ export async function runSingleScenario(scenario: CompareScenariosPayload['scena
     body: JSON.stringify(scenario),
   });
 }
+
+export async function injectScenario(scenarioType = 'GATEWAY_DEGRADATION', targetGateway = 'gateway_b'): Promise<any> {
+  return apiFetch('/simulator/scenario', {
+    method: 'POST',
+    body: JSON.stringify({ scenario_type: scenarioType, target_gateway: targetGateway }),
+  });
+}
+
+export async function resetSimulator(): Promise<any> {
+  return apiFetch('/simulator/reset', {
+    method: 'POST',
+  });
+}

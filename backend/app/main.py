@@ -3,8 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db.session import engine, Base, SessionLocal
-from app.db.models import Transaction
+from app.db.models import Transaction, Incident
 from app.simulator.generator import seed_database
+from app.simulator.scenario_engine import inject_gateway_degradation
 from app.api import health, transactions, dashboard, simulator, evaluation, recovery, incidents, simulation_api, investigation_api
 
 @asynccontextmanager
@@ -19,7 +20,15 @@ async def lifespan(app: FastAPI):
         if count == 0:
             print("Database is empty. Initializing synthetic 50,000 payment dataset (seed 42)...")
             seed_database(db, num_transactions=settings.DEFAULT_NUM_TRANSACTIONS, seed=settings.SEED)
-            print("Database seed complete.")
+            print("Injecting canonical Gateway B degradation scenario for demo readiness...")
+            inject_gateway_degradation(db, gateway_code="gateway_b")
+            print("Canonical demo state initialization complete.")
+        else:
+            # If DB exists but has 0 active incidents, inject canonical Gateway B scenario
+            active_inc_count = db.query(Incident).filter(Incident.status == "ACTIVE").count()
+            if active_inc_count == 0:
+                print("No active incidents found. Initializing canonical Gateway B degradation scenario...")
+                inject_gateway_degradation(db, gateway_code="gateway_b")
     finally:
         db.close()
     yield

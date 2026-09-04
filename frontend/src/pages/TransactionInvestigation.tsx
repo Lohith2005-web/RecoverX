@@ -33,7 +33,7 @@ export const TransactionInvestigation: React.FC<TransactionInvestigationProps> =
       const oppList = await fetchRecoveryOpportunities(20);
       setOpportunities(oppList);
 
-      const idToFetch = targetId || (initialTransactionId ? initialTransactionId : oppList.length > 0 ? oppList[0].transaction_id : 'txn_001160');
+      const idToFetch = targetId || (initialTransactionId ? initialTransactionId : oppList.length > 0 ? oppList[0].transaction_id : 'txn_000040');
       setSearchTxnId(idToFetch);
 
       // 2. Fetch recovery decision for target transaction
@@ -107,7 +107,7 @@ export const TransactionInvestigation: React.FC<TransactionInvestigationProps> =
               type="text"
               value={searchTxnId}
               onChange={(e) => setSearchTxnId(e.target.value)}
-              placeholder="e.g. txn_001160"
+              placeholder="e.g. txn_000040"
               className="bg-slate-950 border border-slate-800 text-xs text-white rounded-xl px-3 py-2 font-mono outline-none focus:border-blue-500 w-32 sm:w-40"
             />
             <button
