@@ -46,7 +46,7 @@ export const WhatIfSimulation: React.FC = () => {
         recoverability_threshold: 0.80,
       },
     ],
-    observation_hours: 72,
+    observation_hours: 24,
   };
 
   const runSimulation = async (payload = defaultPayload) => {
@@ -89,7 +89,7 @@ export const WhatIfSimulation: React.FC = () => {
           recoverability_threshold: threshold,
         },
       ],
-      observation_hours: 72,
+      observation_hours: 24,
     };
     runSimulation(customPayload);
   };
