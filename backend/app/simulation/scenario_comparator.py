@@ -1,7 +1,14 @@
+import datetime
+import json
 from typing import Dict, Any, List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
+from app.db.models import Transaction, Gateway
+from app.engine.baseline_engine import evaluate_naive_baseline_and_recoverx
+from app.ml.model_store import predict_recoverability_batch
 from app.simulation.constants import ScenarioType
 from app.simulation.what_if_engine import run_what_if_simulation
+
 
 def compare_recovery_scenarios(
     db: Session,
@@ -12,6 +19,7 @@ def compare_recovery_scenarios(
     Evaluates multiple counterfactual scenarios in a single request.
     Ranks scenarios deterministically by backend-calculated expected_net_recovery.
     Produces machine-readable evidence and objective backend recommendations (NO LLM selection).
+    Optimized for ultra-fast batch processing under 0.5s total latency.
     """
     if not scenarios_config:
         # Default benchmark scenarios
@@ -43,19 +51,80 @@ def compare_recovery_scenarios(
             }
         ]
 
+    # Pre-fetch failed transactions and gateways ONCE from DB
+    latest_ts = db.query(func.max(Transaction.timestamp)).scalar()
+    if not latest_ts:
+        return {
+            "scenarios": [],
+            "recommended_scenario": "",
+            "recommendation_reason": "No transaction data available",
+            "evidence": []
+        }
+
+    window_start = latest_ts - datetime.timedelta(hours=observation_hours)
+    failed_txns = db.query(Transaction).filter(
+        Transaction.timestamp >= window_start,
+        Transaction.status == "FAILED"
+    ).all()
+
+    gateways = db.query(Gateway).all()
+    gtw_map = {g.id: g for g in gateways}
+
+    # Evaluate Naive Baseline ONCE for all counterfactuals
+    cached_baseline_eval = evaluate_naive_baseline_and_recoverx(db)
+
+    # ML Prediction cache keyed by gateway status overrides
+    ml_cache: Dict[str, List[float]] = {}
+
     scenario_results = []
     for cfg in scenarios_config:
+        gtw_overrides = cfg.get("gateway_status_overrides") or {}
+        cache_key = json.dumps(gtw_overrides, sort_keys=True)
+
+        if cache_key not in ml_cache:
+            # Build feature rows for batch ML inference
+            infer_inputs = []
+            for t in failed_txns:
+                gtw_obj = gtw_map.get(t.gateway_id)
+                gtw_code = gtw_obj.code if gtw_obj else "unknown"
+                effective_gtw_status = gtw_overrides.get(gtw_code, gtw_obj.status if gtw_obj else "HEALTHY")
+
+                infer_inputs.append({
+                    "amount": float(t.amount),
+                    "retry_count": t.retry_count,
+                    "customer_historical_success_rate": t.customer_historical_success_rate,
+                    "latency_ms": t.latency_ms,
+                    "risk_score": t.risk_score,
+                    "payment_method": t.payment_method,
+                    "gateway_id": t.gateway_id,
+                    "issuer_id": t.issuer_id,
+                    "failure_category": t.failure_category,
+                    "failure_code": t.failure_code,
+                    "subscription_flag": str(t.subscription_flag),
+                    "device_type": t.device_type,
+                    "timestamp": t.timestamp.isoformat() if t.timestamp else None,
+                    "gateway_status": effective_gtw_status
+                })
+            ml_cache[cache_key] = predict_recoverability_batch(infer_inputs)
+
+        p_ml_list = ml_cache[cache_key]
+
         res = run_what_if_simulation(
             db,
             scenario_name=cfg.get("name", "Unnamed Scenario"),
             scenario_type=cfg.get("type", ScenarioType.CUSTOM_SCENARIO.value),
-            gateway_status_overrides=cfg.get("gateway_status_overrides"),
+            gateway_status_overrides=gtw_overrides,
             recoverability_threshold=cfg.get("recoverability_threshold", 0.70),
             strategy_overrides=cfg.get("strategy_overrides"),
             include_baseline=True,
-            observation_hours=observation_hours
+            observation_hours=observation_hours,
+            preloaded_failed_txns=failed_txns,
+            preloaded_gtw_map=gtw_map,
+            preloaded_p_ml_list=p_ml_list,
+            preloaded_baseline_eval=cached_baseline_eval
         )
         scenario_results.append(res)
+
 
     # Rank scenarios deterministically by expected_net_recovery
     ranked = sorted(

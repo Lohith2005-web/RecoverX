@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Search, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { fetchRecoveryDecision, fetchRecoveryOpportunities } from '../api/recovery';
-import type { RecoveryDecisionResponse, RecoveryOpportunity, CandidateEvaluation } from '../types';
+import { Search, ArrowLeft, CheckCircle2, Zap, Loader2, AlertOctagon } from 'lucide-react';
+import { fetchRecoveryDecision, fetchRecoveryOpportunities, executeRecovery } from '../api/recovery';
+import type { RecoveryDecisionResponse, RecoveryOpportunity, CandidateEvaluation, ExecutionResult } from '../types';
 import { formatINR, formatPercent } from '../utils/formatters';
 import { Badge } from '../components/UI/Badge';
 import { StrategyComparison } from '../components/StrategyComparison';
@@ -25,9 +25,16 @@ export const TransactionInvestigation: React.FC<TransactionInvestigationProps> =
   const [opportunities, setOpportunities] = useState<RecoveryOpportunity[]>([]);
   const [decisionData, setDecisionData] = useState<RecoveryDecisionResponse | null>(null);
 
+  // Execution flow state
+  const [executing, setExecuting] = useState<boolean>(false);
+  const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
+  const [executionError, setExecutionError] = useState<string | null>(null);
+
   const loadOpportunitiesAndTransaction = async (targetId?: string) => {
     setLoading(true);
     setError(null);
+    setExecutionResult(null);
+    setExecutionError(null);
     try {
       // 1. Fetch available failed transactions list for dropdown
       const oppList = await fetchRecoveryOpportunities(20);
@@ -57,10 +64,42 @@ export const TransactionInvestigation: React.FC<TransactionInvestigationProps> =
     }
   };
 
+  const handleExecuteRecovery = async () => {
+    if (!decisionData || executing) return;
+    setExecuting(true);
+    setExecutionError(null);
+    setExecutionResult(null);
+
+    try {
+      const result = await executeRecovery(decisionData.transaction_id);
+      setExecutionResult(result);
+
+      // Refresh transaction decision & state after execution
+      const refreshed = await fetchRecoveryDecision(decisionData.transaction_id);
+      setDecisionData(refreshed);
+
+      // Refresh opportunities list
+      const oppList = await fetchRecoveryOpportunities(20);
+      setOpportunities(oppList);
+    } catch (err: any) {
+      setExecutionError(err.message || 'Recovery execution failed.');
+    } finally {
+      setExecuting(false);
+    }
+  };
+
   const candidateList: CandidateEvaluation[] = decisionData?.decision?.decision_trace?.candidate_evaluations || [];
+
   const winningStrategy = decisionData?.decision?.strategy || 'DO_NOT_ACT';
   const explanation = decisionData?.decision?.explanation;
   const pMl = decisionData?.recoverability_model_prediction?.recoverability_probability || 0;
+  const isAlreadyRecovered = decisionData?.status === 'RECOVERED';
+  const isExecutable =
+    !!decisionData &&
+    winningStrategy !== 'DO_NOT_ACT' &&
+    decisionData.decision?.autonomy_action !== 'DO_NOT_ACT' &&
+    !isAlreadyRecovered;
+
 
   return (
     <div className="space-y-6">
@@ -196,7 +235,124 @@ export const TransactionInvestigation: React.FC<TransactionInvestigationProps> =
                 )}
               </div>
             )}
+
+            {/* RECOVERY EXECUTION ACTION CARD */}
+            {isAlreadyRecovered ? (
+              <div className="bg-emerald-950/40 border border-emerald-500/50 p-4 rounded-xl flex items-center justify-between font-mono text-xs text-emerald-200">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <div>
+                    <span className="font-bold text-white uppercase block">TRANSACTION RECOVERED</span>
+                    <span className="text-[11px] text-emerald-300">
+                      Successfully recovered via <strong className="text-white">{winningStrategy}</strong>
+                    </span>
+                  </div>
+                </div>
+                {decisionData.recovered_amount !== undefined && (
+                  <Badge variant="success">Recovered {formatINR(decisionData.recovered_amount)}</Badge>
+                )}
+              </div>
+            ) : isExecutable ? (
+              <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950/70 p-5 rounded-xl border border-blue-900/60 shadow-lg space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Zap className="w-4 h-4 text-blue-400 animate-pulse" />
+                      <span className="text-xs font-bold text-white uppercase tracking-wider">Recommended Execution Action</span>
+                      <Badge variant="info">{winningStrategy}</Badge>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Execute backend decision engine strategy for transaction <span className="font-mono text-white font-bold">{decisionData.transaction_id}</span>.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleExecuteRecovery}
+                    disabled={executing || !!executionResult}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold font-mono transition-all flex items-center justify-center space-x-2 shadow-lg ${
+                      executing || executionResult
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/50 border border-emerald-500/50 hover:scale-[1.02] active:scale-[0.98]'
+                    }`}
+                  >
+                    {executing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                        <span>EXECUTING RECOVERY...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4" />
+                        <span>EXECUTE RECOMMENDED RECOVERY</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Outcome Display */}
+                {executionResult && (
+                  <div className={`p-4 rounded-xl border font-mono text-xs space-y-2.5 ${
+                    executionResult.simulated_success
+                      ? 'bg-emerald-950/80 border-emerald-600/70 text-emerald-200'
+                      : 'bg-red-950/80 border-red-600/70 text-red-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {executionResult.simulated_success ? (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                        ) : (
+                          <AlertOctagon className="w-5 h-5 text-red-400" />
+                        )}
+                        <span className="font-bold text-sm">
+                          {executionResult.simulated_success
+                            ? 'RECOVERY EXECUTION SUCCESSFUL'
+                            : 'RECOVERY EXECUTION COMPLETED WITH FAILURE'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">
+                        Simulated Recovery
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Strategy Executed</span>
+                        <span className="font-bold text-white">{executionResult.strategy}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Recovered Amount</span>
+                        <span className="font-bold text-emerald-400">{formatINR(executionResult.recovered_amount)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Net Economic Value</span>
+                        <span className="font-bold text-blue-300">{formatINR(executionResult.net_recovered_amount)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Execution ID</span>
+                        <span className="font-mono text-slate-300">{executionResult.execution_id}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-amber-300/90 pt-1 italic">
+                      * Note: This is a simulated recovery execution produced by the RecoverX decision engine sandbox environment, not a real payment gateway transaction.
+                    </p>
+                  </div>
+                )}
+
+                {executionError && (
+                  <div className="p-3 bg-red-950/80 border border-red-800 rounded-xl text-red-300 text-xs font-mono">
+                    Execution Error: {executionError}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 font-mono text-xs text-slate-400 flex items-center justify-between">
+                <span>Execution Policy Gate: Action not recommended or blocked (`{winningStrategy}`)</span>
+                <Badge variant="warning">NO RECOVERY ACTION</Badge>
+              </div>
+            )}
           </div>
+
 
           {/* CANDIDATE STRATEGIES EVALUATION GRID */}
           {candidateList.length > 0 && (

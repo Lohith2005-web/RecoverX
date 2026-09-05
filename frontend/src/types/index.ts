@@ -202,4 +202,22 @@ export interface RecoveryDecisionResponse {
       winning_expected_economic_value: string;
     };
   };
+  status?: string;
+  recovered_amount?: number;
 }
+
+export interface ExecutionResult {
+  execution_id: string;
+  decision_id: string;
+  transaction_id: string;
+  strategy: string;
+  simulated_success: boolean;
+  recovered_amount: number;
+  recovery_cost: number;
+  friction_cost: number;
+  risk_penalty: number;
+  net_recovered_amount: number;
+  executed_at: string;
+  is_simulated: boolean;
+}
+

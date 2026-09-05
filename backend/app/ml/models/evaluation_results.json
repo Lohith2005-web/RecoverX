@@ -1,110 +1,110 @@
 {
   "model_type": "XGBoost Classifier",
   "seed_used": 42,
-  "dataset_size": 3577,
-  "failed_transactions_count": 3577,
+  "dataset_size": 4365,
+  "failed_transactions_count": 4365,
   "target_distribution": {
-    "total_positive_recoverable": 2395,
-    "total_negative_unrecoverable": 1182,
-    "positive_class_ratio": 0.6696
+    "total_positive_recoverable": 3178,
+    "total_negative_unrecoverable": 1187,
+    "positive_class_ratio": 0.7281
   },
-  "train_size": 2861,
-  "test_size": 716,
-  "training_duration_seconds": 1.372,
+  "train_size": 3492,
+  "test_size": 873,
+  "training_duration_seconds": 0.315,
   "test_metrics": {
-    "precision": 0.8036,
-    "recall": 0.8455,
-    "f1_score": 0.824,
-    "roc_auc": 0.8398,
-    "accuracy": 0.7584,
+    "precision": 0.8434,
+    "recall": 0.8805,
+    "f1_score": 0.8615,
+    "roc_auc": 0.8709,
+    "accuracy": 0.7938,
     "confusion_matrix": [
       [
-        138,
-        99
+        133,
+        104
       ],
       [
-        74,
-        405
+        76,
+        560
       ]
     ]
   },
   "baseline_comparison": {
     "model_name": "Naive Single-Retry Baseline",
-    "precision": 0.7184,
-    "recall": 0.9854,
-    "f1": 0.831,
-    "accuracy": 0.7318,
+    "precision": 0.7674,
+    "recall": 0.9906,
+    "f1": 0.8648,
+    "accuracy": 0.7743,
     "confusion_matrix": [
       [
-        52,
-        185
+        46,
+        191
       ],
       [
-        7,
-        472
+        6,
+        630
       ]
     ]
   },
   "feature_importances": [
     {
       "feature": "failure_category_TECHNICAL_TIMEOUT",
-      "importance": 0.3843
+      "importance": 0.5022
     },
     {
       "feature": "failure_code_GATEWAY_TIMEOUT",
-      "importance": 0.0899
+      "importance": 0.0681
     },
     {
       "feature": "failure_category_COMPLIANCE_RISK",
-      "importance": 0.0726
-    },
-    {
-      "feature": "failure_code_RISK_REJECTED",
-      "importance": 0.0514
-    },
-    {
-      "feature": "failure_category_USER_ERROR",
-      "importance": 0.0329
+      "importance": 0.059
     },
     {
       "feature": "latency_ms",
-      "importance": 0.0282
+      "importance": 0.0341
     },
     {
       "feature": "gateway_id_gtw_b",
-      "importance": 0.0221
+      "importance": 0.0243
     },
     {
-      "feature": "customer_historical_success_rate",
-      "importance": 0.0198
+      "feature": "failure_category_USER_ERROR",
+      "importance": 0.0215
     },
     {
       "feature": "gateway_id_gtw_a",
-      "importance": 0.0177
+      "importance": 0.0198
+    },
+    {
+      "feature": "customer_historical_success_rate",
+      "importance": 0.0171
+    },
+    {
+      "feature": "payment_method_NET_BANKING",
+      "importance": 0.0145
     },
     {
       "feature": "failure_code_INSUFFICIENT_FUNDS",
-      "importance": 0.0168
-    },
-    {
-      "feature": "failure_code_AUTHENTICATION_FAILED",
-      "importance": 0.0148
-    },
-    {
-      "feature": "amount",
-      "importance": 0.014
+      "importance": 0.0135
     },
     {
       "feature": "gateway_id_gtw_c",
-      "importance": 0.014
+      "importance": 0.0129
     },
     {
-      "feature": "risk_score",
-      "importance": 0.0138
+      "feature": "failure_code_RISK_REJECTED",
+      "importance": 0.0129
     },
     {
-      "feature": "day_of_week",
-      "importance": 0.0138
+      "feature": "subscription_flag_False",
+      "importance": 0.0125
+    },
+    {
+      "feature": "amount",
+      "importance": 0.0122
+    },
+    {
+      "feature": "subscription_flag_True",
+      "importance": 0.012
     }
   ],
   "excluded_forbidden_fields": [

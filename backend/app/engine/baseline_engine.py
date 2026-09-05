@@ -1,8 +1,8 @@
 from decimal import Decimal
 from typing import Dict, Any, List
 import pandas as pd
-from sqlalchemy.orm import Session
-from app.db.models import Transaction
+from sqlalchemy.orm import Session, joinedload
+from app.db.models import Transaction, Gateway
 from app.ml.model_store import predict_recoverability
 from app.engine.strategy_selector import evaluate_recovery_decision
 from app.engine.economic_model import to_decimal
@@ -18,6 +18,9 @@ def evaluate_naive_baseline_and_recoverx(db: Session) -> Dict[str, Any]:
 
     if not failed_transactions:
         failed_transactions = db.query(Transaction).filter(Transaction.failure_code != "SUCCESS").all()
+
+
+
 
     total_failed = len(failed_transactions)
 

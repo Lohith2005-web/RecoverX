@@ -4,7 +4,7 @@ import joblib
 import datetime
 import pandas as pd
 from pathlib import Path
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, List
 from app.ml.feature_engineering import (
     NUMERICAL_FEATURES,
     CATEGORICAL_FEATURES,
@@ -85,6 +85,46 @@ def predict_recoverability(input_data: Union[Dict[str, Any], pd.DataFrame]) -> D
         "model_version": "1.0.0",
         "prediction_timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
     }
+
+def predict_recoverability_batch(input_data: Union[List[Dict[str, Any]], pd.DataFrame]) -> List[float]:
+    """
+    Batch inference interface:
+    Accepts pre-action features for a batch of failed transactions and returns
+    a list of recoverability probabilities rounded to 4 decimal places.
+    """
+    if isinstance(input_data, list):
+        df_input = pd.DataFrame(input_data)
+    else:
+        df_input = input_data.copy()
+
+    if df_input.empty:
+        return []
+
+    if "timestamp" in df_input.columns:
+        timestamps = pd.to_datetime(df_input["timestamp"])
+        df_input["hour_of_day"] = timestamps.dt.hour
+        df_input["day_of_week"] = timestamps.dt.dayofweek
+    else:
+        if "hour_of_day" not in df_input.columns:
+            df_input["hour_of_day"] = 12
+        if "day_of_week" not in df_input.columns:
+            df_input["day_of_week"] = 0
+
+    if "subscription_flag" in df_input.columns:
+        df_input["subscription_flag"] = df_input["subscription_flag"].astype(str)
+
+    validate_no_data_leakage(df_input)
+
+    all_features = NUMERICAL_FEATURES + CATEGORICAL_FEATURES
+    for feat in all_features:
+        if feat not in df_input.columns:
+            raise ValueError(f"Missing required pre-action feature: '{feat}'")
+
+    X_infer = df_input[all_features]
+    pipeline = get_model()
+    probas = pipeline.predict_proba(X_infer)[:, 1]
+    return [round(float(p), 4) for p in probas]
+
 
 def get_evaluation_metrics() -> Dict[str, Any]:
     """
