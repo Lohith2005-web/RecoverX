@@ -83,6 +83,7 @@ def get_recovery_decision(
 ):
     """
     Computes or retrieves the Economic Recovery Decision for a single transaction.
+    Exposes explicit execution state (status, is_executed, execution_id, recovered_amount).
     """
     transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
     if not transaction:
@@ -92,15 +93,25 @@ def get_recovery_decision(
     ml_pred = predict_recoverability(infer_data)
     decision_dict = evaluate_recovery_decision(ml_pred["recoverability_probability"], transaction.amount, infer_data)
 
+    existing_exec = db.query(RecoveryExecution).filter(RecoveryExecution.transaction_id == transaction_id).order_by(RecoveryExecution.executed_at.desc()).first()
+    is_executed = transaction.status == "RECOVERED" or existing_exec is not None
+    execution_id = existing_exec.id if existing_exec else None
+    recovered_amount = transaction.recovered_amount if transaction.status == "RECOVERED" else (existing_exec.recovered_amount if existing_exec else 0.0)
+
     return {
         "transaction_id": transaction.id,
         "transaction_amount": transaction.amount,
         "failure_code": transaction.failure_code,
         "failure_category": transaction.failure_category,
         "gateway_status": infer_data["gateway_status"],
+        "status": transaction.status,
+        "is_executed": is_executed,
+        "execution_id": execution_id,
+        "recovered_amount": recovered_amount,
         "recoverability_model_prediction": ml_pred,
         "decision": decision_dict
     }
+
 
 
 @router.post("/recovery/decision/{transaction_id}")

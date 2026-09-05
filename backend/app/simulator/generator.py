@@ -4,7 +4,10 @@ import pandas as pd
 import datetime
 from sqlalchemy.orm import Session
 from app.db.session import Base
-from app.db.models import Merchant, Customer, Gateway, Issuer, Transaction, Incident, SimulationScenario
+from app.db.models import (
+    Merchant, Customer, Gateway, Issuer, Transaction, Incident, SimulationScenario,
+    RecoveryExecution, RecoveryDecision, AuditEvent, RecoveryAction, RecoveryPrediction
+)
 from app.config import settings
 
 def seed_database(db: Session, num_transactions: int = 50000, seed: int = 42) -> dict:
@@ -18,7 +21,14 @@ def seed_database(db: Session, num_transactions: int = 50000, seed: int = 42) ->
     # Ensure tables exist on the current connection engine
     Base.metadata.create_all(bind=db.get_bind())
 
-    # 1. Clear existing data
+    # 1. Clear existing recovery execution and decision data (respect FK dependencies)
+    db.query(RecoveryExecution).delete()
+    db.query(AuditEvent).delete()
+    db.query(RecoveryAction).delete()
+    db.query(RecoveryPrediction).delete()
+    db.query(RecoveryDecision).delete()
+
+    # 2. Clear core entity data
     db.query(Transaction).delete()
     db.query(Incident).delete()
     db.query(Customer).delete()
@@ -27,6 +37,7 @@ def seed_database(db: Session, num_transactions: int = 50000, seed: int = 42) ->
     db.query(Issuer).delete()
     db.query(SimulationScenario).delete()
     db.commit()
+
 
     # 2. Seed Merchants
     merchants_data = [

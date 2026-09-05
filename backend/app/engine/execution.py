@@ -130,7 +130,9 @@ def execute_recovery_decision(
             db.refresh(decision)
 
     # 3. Prevent duplicate execution
-    existing_exec = db.query(RecoveryExecution).filter(RecoveryExecution.decision_id == decision.id).first()
+    existing_exec = db.query(RecoveryExecution).filter(
+        (RecoveryExecution.decision_id == decision.id) | (RecoveryExecution.transaction_id == transaction.id)
+    ).first()
     if existing_exec:
         raise ValueError(f"Duplicate execution prevented: Decision '{decision.id}' has already been executed.")
 

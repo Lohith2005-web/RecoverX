@@ -204,6 +204,8 @@ export interface RecoveryDecisionResponse {
   };
   status?: string;
   recovered_amount?: number;
+  is_executed?: boolean;
+  execution_id?: string;
 }
 
 export interface ExecutionResult {

@@ -93,7 +93,7 @@ export const TransactionInvestigation: React.FC<TransactionInvestigationProps> =
   const winningStrategy = decisionData?.decision?.strategy || 'DO_NOT_ACT';
   const explanation = decisionData?.decision?.explanation;
   const pMl = decisionData?.recoverability_model_prediction?.recoverability_probability || 0;
-  const isAlreadyRecovered = decisionData?.status === 'RECOVERED';
+  const isAlreadyRecovered = decisionData?.status === 'RECOVERED' || decisionData?.is_executed === true;
   const isExecutable =
     !!decisionData &&
     winningStrategy !== 'DO_NOT_ACT' &&
